@@ -1,6 +1,7 @@
 const API_BUSQUEDA = 'https://archive.org/advancedsearch.php';
 const API_METADATA = 'https://archive.org/metadata';
 const CANTIDAD = 3; // un disco trae mucha música: con 3 alcanza
+const LIMITE_TEMA = 30 * 60; // segundos: más largo que eso es un programa de radio, no un tema
 
 const buscador = document.getElementById('buscador');
 const resultados = document.getElementById('resultados');
@@ -29,12 +30,17 @@ function formatearTiempo(seg) {
   return `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
 }
 
-// "213.45" o "3:33" -> "3:33"
-function formatearDuracion(length) {
-  if (!length) return '';
-  const seg = String(length).includes(':')
+// "213.45" o "3:33" -> segundos (NaN si no hay dato)
+function aSegundos(length) {
+  if (!length) return NaN;
+  return String(length).includes(':')
     ? String(length).split(':').reduce((t, n) => t * 60 + Number(n), 0)
     : Number(length);
+}
+
+// "213.45" o "3:33" -> "3:33"
+function formatearDuracion(length) {
+  const seg = aSegundos(length);
   return Number.isFinite(seg) ? formatearTiempo(seg) : '';
 }
 
@@ -130,13 +136,16 @@ function actualizarEtiqueta() {
 // ---------- Un disco ----------
 
 // Un mismo tema puede estar en varios MP3: nos quedamos con uno, preferimos VBR MP3
-function filtrarTemas(files) {
+function filtrarTemas(files, limite = LIMITE_TEMA) {
   const porTema = new Map();
-  files.filter(f => (f.format || '').includes('MP3')).forEach(f => {
-    const clave = (f.original || f.name).replace(/\.[^.]+$/, '');
-    const actual = porTema.get(clave);
-    if (!actual || (f.format === 'VBR MP3' && actual.format !== 'VBR MP3')) porTema.set(clave, f);
-  });
+  files
+    .filter(f => (f.format || '').includes('MP3'))
+    .filter(f => !(aSegundos(f.length) > limite)) // sin dato de duración: no lo excluimos
+    .forEach(f => {
+      const clave = (f.original || f.name).replace(/\.[^.]+$/, '');
+      const actual = porTema.get(clave);
+      if (!actual || (f.format === 'VBR MP3' && actual.format !== 'VBR MP3')) porTema.set(clave, f);
+    });
   return [...porTema.values()].sort((a, b) => {
     // los que tienen track van primero (por número); el resto por nombre
     const ta = parseInt(a.track, 10), tb = parseInt(b.track, 10);
@@ -156,7 +165,10 @@ async function abrirDisco(id) {
     if (este !== pedidoDisco) return;
     const temas = filtrarTemas(data.files || []);
     if (!temas.length) {
-      resultados.textContent = '🤷 Ese disco no tiene temas MP3. Probá con otro.';
+      const hayLargos = filtrarTemas(data.files || [], Infinity).length > 0;
+      resultados.textContent = hayLargos
+        ? `📻 Ese disco solo tiene programas largos (más de ${LIMITE_TEMA / 60} min). Probá con otro.`
+        : '🤷 Ese disco no tiene temas MP3. Probá con otro.';
       return;
     }
     const meta = data.metadata || {};

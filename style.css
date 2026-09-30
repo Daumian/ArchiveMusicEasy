@@ -99,6 +99,7 @@ h1 {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
 }
 .disco-cabecera {
@@ -146,9 +147,12 @@ h1 {
 .tema .nombre {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere; /* nombres de archivo largos sin espacios */
 }
 .tema .duracion {
   color: #8fbfa5;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ---------- Reproductor ---------- */

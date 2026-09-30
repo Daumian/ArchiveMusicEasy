@@ -1,7 +1,8 @@
 const API_BUSQUEDA = 'https://archive.org/advancedsearch.php';
 const API_METADATA = 'https://archive.org/metadata';
 const CANTIDAD = 3; // un disco trae mucha música: con 3 alcanza
-const LIMITE_TEMA = 30 * 60; // segundos: más largo que eso es un programa de radio, no un tema
+const LIMITE_TEMA = 15 * 60; // segundos: más largo que eso es un programa de radio, no un tema
+const EXCLUIDOS = /podcast/i; // discos que mencionan estas palabras no se muestran
 
 const buscador = document.getElementById('buscador');
 const resultados = document.getElementById('resultados');
@@ -89,9 +90,15 @@ async function pedirDiscosAlAzar() {
 // y se reponen con otros, hasta tener CANTIDAD (o quedarnos sin rondas).
 async function revisarSlots(docs, este, rondas) {
   if (!docs.length) return; // "no encontramos nada" ya se mostró
-  await Promise.allSettled(docs.map(doc => cargarDisco(doc.identifier).then(info => {
-    if (este === pedidoRandom && !info.temas.length) quitarSlot(doc.identifier);
-  })));
+  await Promise.allSettled(docs.map(doc => {
+    if (excluido(doc)) { // sin gastar ni un pedido
+      quitarSlot(doc.identifier);
+      return Promise.resolve();
+    }
+    return cargarDisco(doc.identifier).then(info => {
+      if (este === pedidoRandom && (info.excluido || !info.temas.length)) quitarSlot(doc.identifier);
+    });
+  }));
   if (este !== pedidoRandom) return;
 
   const faltan = CANTIDAD - discos.querySelectorAll('.slot').length;
@@ -205,6 +212,11 @@ function filtrarTemas(files, limite = LIMITE_TEMA) {
   });
 }
 
+// Antes de pedir nada: ¿el título o el autor ya delatan que no queremos este disco?
+function excluido(doc) {
+  return EXCLUIDOS.test(`${aTexto(doc.title, '')} ${aTexto(doc.creator, '')}`);
+}
+
 // Metadata de cada disco, guardada como promesa: la revisión de fondo y el toque comparten el pedido
 const cacheDiscos = new Map();
 
@@ -221,6 +233,7 @@ function cargarDisco(id) {
         return {
           titulo: aTexto(meta.title, id),
           autor: aTexto(meta.creator, 'Desconocido'),
+          excluido: EXCLUIDOS.test([meta.title, meta.creator, meta.subject, meta.collection, meta.description].flat().join(' ')),
           temas: filtrarTemas(archivos),
           hayLargos: filtrarTemas(archivos, Infinity).length > 0
         };
@@ -237,8 +250,10 @@ async function abrirDisco(id, { tema = null, auto = true } = {}) {
   try {
     const info = await cargarDisco(id);
     if (este !== pedidoDisco) return;
-    if (!info.temas.length) {
-      resultados.textContent = info.hayLargos
+    if (info.excluido || !info.temas.length) {
+      resultados.textContent = info.excluido
+        ? '🎙️ Ese disco parece un podcast, lo dejamos afuera.'
+        : info.hayLargos
         ? `📻 Ese disco solo tiene programas largos (más de ${LIMITE_TEMA / 60} min).`
         : '🤷 Ese disco no tiene temas MP3.';
       quitarSlot(id);

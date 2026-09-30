@@ -72,3 +72,56 @@ header {
 #btn-random:hover {
   background: #333;
 }
+
+#btn-volver {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 20px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+#btn-volver:hover {
+  background: #333;
+}
+.disco-cabecera {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  margin: 20px 0;
+}
+.disco-cabecera img {
+  width: 200px;
+  max-width: 40vw;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #222;
+}
+.disco-cabecera h2 {
+  margin: 0 0 6px;
+}
+.disco-cabecera .autor {
+  color: #aaa;
+}
+.tema {
+  display: flex;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tema:hover {
+  background: #262626;
+}
+.tema .num {
+  width: 24px;
+  color: #aaa;
+  text-align: right;
+}
+.tema .nombre {
+  flex: 1;
+}
+.tema .duracion {
+  color: #aaa;
+}

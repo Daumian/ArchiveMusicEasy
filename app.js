@@ -250,6 +250,35 @@ audio.addEventListener('error', () => {
 });
 progreso.addEventListener('input', () => { audio.currentTime = progreso.value; });
 
+// ---------- Volumen ----------
+
+const volumen = document.getElementById('volumen');
+const btnMute = document.getElementById('btn-mute');
+
+function iconoVolumen() {
+  if (audio.muted || audio.volume === 0) return '🔇';
+  return audio.volume < 0.4 ? '🔈' : audio.volume < 0.75 ? '🔉' : '🔊';
+}
+
+audio.addEventListener('volumechange', () => {
+  btnMute.textContent = iconoVolumen();
+  volumen.value = audio.muted ? 0 : audio.volume;
+  try { localStorage.setItem('volumen', audio.volume); } catch (e) { /* sin storage, no pasa nada */ }
+});
+volumen.addEventListener('input', () => {
+  audio.muted = false;
+  audio.volume = Number(volumen.value);
+});
+btnMute.addEventListener('click', () => { audio.muted = !audio.muted; });
+
+// Arrancamos con el último volumen usado (o 70%, para que no sorprenda)
+let volumenInicial = 0.7;
+try {
+  const guardado = parseFloat(localStorage.getItem('volumen'));
+  if (guardado >= 0 && guardado <= 1) volumenInicial = guardado;
+} catch (e) { /* sin storage */ }
+audio.volume = volumenInicial;
+
 // ---------- Eventos de la pantalla ----------
 
 discos.addEventListener('click', e => {

@@ -279,3 +279,29 @@ h1 {
 #btn-random:hover {
   border-color: #7c5cff;
 }
+
+/* ---------- Volumen ---------- */
+.volumen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+#btn-mute {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #1c1c22;
+  color: #fff;
+  font-size: 14px;
+}
+#btn-mute:hover {
+  background: #33333d;
+}
+#volumen {
+  flex: 1;
+  margin: 0;
+  accent-color: #7c5cff;
+}

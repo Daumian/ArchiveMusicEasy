@@ -60,7 +60,8 @@ header {
   text-overflow: ellipsis;
 }
 
-#btn-random {
+#btn-random-fecha,
+#btn-random-sort {
   padding: 10px 14px;
   border: none;
   border-radius: 20px;
@@ -69,6 +70,7 @@ header {
   cursor: pointer;
   white-space: nowrap;
 }
-#btn-random:hover {
+#btn-random-fecha:hover,
+#btn-random-sort:hover {
   background: #333;
 }

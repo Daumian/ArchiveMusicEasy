@@ -11,7 +11,7 @@ function aTexto(valor, porDefecto) {
 
 const CANTIDAD = 12; // pocos resultados = pocos datos y un solo pedido por acción
 
-async function buscar(texto, { rows = CANTIDAD, page = 1 } = {}) {
+async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads desc' } = {}) {
   resultados.textContent = '⏳ Buscando...';
   const params = new URLSearchParams({
     q: `(${texto}) AND mediatype:audio`,
@@ -20,7 +20,7 @@ async function buscar(texto, { rows = CANTIDAD, page = 1 } = {}) {
     output: 'json'
   });
   ['identifier', 'title', 'creator'].forEach(c => params.append('fl[]', c));
-  params.append('sort[]', 'downloads desc');
+  params.append('sort[]', orden);
 
   try {
     const res = await fetch(`${API_BUSQUEDA}?${params}`);
@@ -71,10 +71,18 @@ buscador.addEventListener('keydown', e => {
   if (e.key === 'Enter' && buscador.value.trim()) buscar(buscador.value.trim());
 });
 
-// Random: 5 discos de una página al azar, sin filtros de tema
-document.getElementById('btn-random').addEventListener('click', () => {
-  const pagina = Math.floor(Math.random() * 2000) + 1; // entre los ~10.000 más descargados
-  buscar('*:*', { rows: 5, page: pagina });
+// PRUEBA A: 5 discos populares de un mes al azar (siempre página 1, sin paginación profunda)
+document.getElementById('btn-random-fecha').addEventListener('click', () => {
+  const anio = 2006 + Math.floor(Math.random() * 20); // 2006-2025
+  const mes = 1 + Math.floor(Math.random() * 12);
+  const ultimo = new Date(anio, mes, 0).getDate();
+  const mm = String(mes).padStart(2, '0');
+  buscar(`addeddate:[${anio}-${mm}-01 TO ${anio}-${mm}-${ultimo}]`, { rows: 5 });
+});
+
+// PRUEBA B: 5 discos con orden aleatorio de la API (si archive.org lo soporta)
+document.getElementById('btn-random-sort').addEventListener('click', () => {
+  buscar('*:*', { rows: 5, orden: 'random' });
 });
 
 // Pantalla de inicio: colecciones populares, así no arranca vacío

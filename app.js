@@ -9,11 +9,14 @@ function aTexto(valor, porDefecto) {
   return valor || porDefecto;
 }
 
-async function buscar(texto) {
+const CANTIDAD = 12; // pocos resultados = pocos datos y un solo pedido por acción
+
+async function buscar(texto, { rows = CANTIDAD, page = 1 } = {}) {
   resultados.textContent = '⏳ Buscando...';
   const params = new URLSearchParams({
     q: `(${texto}) AND mediatype:audio`,
-    rows: 30,
+    rows,
+    page,
     output: 'json'
   });
   ['identifier', 'title', 'creator'].forEach(c => params.append('fl[]', c));
@@ -66,6 +69,12 @@ function mostrarResultados(docs) {
 
 buscador.addEventListener('keydown', e => {
   if (e.key === 'Enter' && buscador.value.trim()) buscar(buscador.value.trim());
+});
+
+// Random: 5 discos de una página al azar, sin filtros de tema
+document.getElementById('btn-random').addEventListener('click', () => {
+  const pagina = Math.floor(Math.random() * 2000) + 1; // entre los ~10.000 más descargados
+  buscar('*:*', { rows: 5, page: pagina });
 });
 
 // Pantalla de inicio: colecciones populares, así no arranca vacío

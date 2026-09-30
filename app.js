@@ -93,9 +93,11 @@ function filtrarTemas(files) {
     if (!actual || (f.format === 'VBR MP3' && actual.format !== 'VBR MP3')) porTema.set(clave, f);
   });
   return [...porTema.values()].sort((a, b) => {
+    // los que tienen track van primero (por número); el resto por nombre
     const ta = parseInt(a.track, 10), tb = parseInt(b.track, 10);
     if (!isNaN(ta) && !isNaN(tb) && ta !== tb) return ta - tb;
-    return a.name.localeCompare(b.name);
+    if (!isNaN(ta) !== !isNaN(tb)) return isNaN(ta) ? 1 : -1;
+    return a.name.localeCompare(b.name, undefined, { numeric: true });
   });
 }
 

@@ -155,7 +155,7 @@ function filtrarTemas(files, limite = LIMITE_TEMA) {
   });
 }
 
-async function abrirDisco(id) {
+async function abrirDisco(id, { tema = null, auto = true } = {}) {
   const este = ++pedidoDisco;
   resultados.textContent = '⏳ Abriendo disco...';
   try {
@@ -175,7 +175,8 @@ async function abrirDisco(id) {
     discoActual = { id, titulo: aTexto(meta.title, id), autor: aTexto(meta.creator, 'Desconocido') };
     cola = temas;
     mostrarDisco();
-    reproducir(0);
+    const inicial = Math.max(0, cola.findIndex(f => f.name === tema)); // si no está, el primero
+    reproducir(inicial, auto);
   } catch (err) {
     if (este !== pedidoDisco) return;
     resultados.textContent = '❌ No pudimos abrir el disco, probá de nuevo.';
@@ -228,12 +229,12 @@ function mostrarDisco() {
 
 // ---------- Reproductor ----------
 
-function reproducir(i) {
+function reproducir(i, auto = true) {
   if (i < 0 || i >= cola.length) return;
   indice = i;
   const archivo = cola[i].name.split('/').map(encodeURIComponent).join('/');
   audio.src = `https://archive.org/download/${encodeURIComponent(discoActual.id)}/${archivo}`;
-  audio.play().catch(err => console.error(err));
+  if (auto) audio.play().catch(err => console.error(err));
   marcarActual();
 }
 
@@ -308,6 +309,33 @@ try {
 } catch (e) { /* sin storage */ }
 audio.volume = volumenInicial;
 
+// ---------- Compartir ----------
+
+const btnCompartir = document.getElementById('btn-compartir');
+
+function linkDelTema() {
+  const params = new URLSearchParams({ d: discoActual.id, t: cola[indice].name });
+  return `${location.origin}${location.pathname}?${params}`;
+}
+
+btnCompartir.addEventListener('click', async () => {
+  if (!discoActual || indice < 0) return;
+  const tema = cola[indice];
+  const nombre = tema.title || tema.name.split('/').pop().replace(/\.[^.]+$/, '');
+  const datos = { title: nombre, text: `🎧 ${nombre} — ${discoActual.titulo}`, url: linkDelTema() };
+  try {
+    if (navigator.share) {
+      await navigator.share(datos); // celu: menú de compartir
+    } else {
+      await navigator.clipboard.writeText(datos.url); // compu: copiamos el link
+      btnCompartir.textContent = '✅';
+      setTimeout(() => { btnCompartir.textContent = '🔗'; }, 1500);
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') window.prompt('Copiá el link:', datos.url); // cerró el menú: no es error
+  }
+});
+
 // ---------- Eventos de la pantalla ----------
 
 discos.addEventListener('click', e => {
@@ -340,6 +368,8 @@ buscador.addEventListener('keydown', e => {
   cargarRandom();
 });
 
-// Inicio
+// Inicio: si vienen de un link compartido, abrimos ese disco y tema (sin sonar solo)
 resultados.textContent = '👇 Elegí un disco para escuchar';
 cargarRandom();
+const entrada = new URLSearchParams(location.search);
+if (entrada.get('d')) abrirDisco(entrada.get('d'), { tema: entrada.get('t'), auto: false });

@@ -293,6 +293,11 @@ h1 {
   right: 0;
   top: 0;
 }
+#btn-compartir {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
 #btn-volumen {
   width: 44px;
   height: 44px;

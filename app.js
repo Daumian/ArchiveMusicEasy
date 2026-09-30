@@ -50,10 +50,9 @@ function portada(id) {
 
 // ---------- Los 3 discos al azar ----------
 
-let reintentos = 0; // veces que pedimos otros 3 solos porque ninguno servía
+const RONDAS_EXTRA = 4; // veces que pedimos discos de reemplazo por cada refresco
 
-async function cargarRandom(reintento = false) {
-  if (!reintento) reintentos = 0;
+async function cargarRandom() {
   const este = ++pedidoRandom;
   actualizarEtiqueta();
   discos.textContent = '';
@@ -63,17 +62,10 @@ async function cargarRandom(reintento = false) {
   discos.appendChild(cargando);
 
   try {
-    // El orden "random" de archive.org es fijo para una misma consulta,
-    // así que en cada toque saltamos a una página al azar de ese orden.
-    let respuesta = await pedirDiscos(1 + Math.floor(Math.random() * 100));
-    if (!respuesta.docs.length && respuesta.numFound > 0) {
-      // la palabra tiene pocos resultados: elegimos entre las páginas que sí existen
-      const paginas = Math.ceil(respuesta.numFound / CANTIDAD);
-      respuesta = await pedirDiscos(1 + Math.floor(Math.random() * paginas));
-    }
+    const respuesta = await pedirDiscosAlAzar();
     if (este !== pedidoRandom) return;
     mostrarSlots(respuesta.docs);
-    revisarSlots(respuesta.docs, este);
+    revisarSlots(respuesta.docs, este, RONDAS_EXTRA);
   } catch (err) {
     if (este !== pedidoRandom) return;
     cargando.textContent = '❌ No pudimos buscar, probá de nuevo.';
@@ -81,17 +73,42 @@ async function cargarRandom(reintento = false) {
   }
 }
 
+// El orden "random" de archive.org es fijo para una misma consulta,
+// así que en cada pedido saltamos a una página al azar de ese orden.
+async function pedirDiscosAlAzar() {
+  let respuesta = await pedirDiscos(1 + Math.floor(Math.random() * 100));
+  if (!respuesta.docs.length && respuesta.numFound > 0) {
+    // la palabra tiene pocos resultados: elegimos entre las páginas que sí existen
+    const paginas = Math.ceil(respuesta.numFound / CANTIDAD);
+    respuesta = await pedirDiscos(1 + Math.floor(Math.random() * paginas));
+  }
+  return respuesta;
+}
+
 // Por atrás, sin apurar: los discos sin ningún tema válido (solo radio, sin MP3) desaparecen
-async function revisarSlots(docs, este) {
-  if (!docs.length) return; // "no encontramos nada" ya se mostró; no reintentamos
+// y se reponen con otros, hasta tener CANTIDAD (o quedarnos sin rondas).
+async function revisarSlots(docs, este, rondas) {
+  if (!docs.length) return; // "no encontramos nada" ya se mostró
   await Promise.allSettled(docs.map(doc => cargarDisco(doc.identifier).then(info => {
     if (este === pedidoRandom && !info.temas.length) quitarSlot(doc.identifier);
   })));
-  if (este !== pedidoRandom || discos.querySelector('.slot')) return;
-  if (reintentos < 3) {
-    reintentos++;
-    cargarRandom(true); // ninguno servía: pedimos otros 3
-  } else {
+  if (este !== pedidoRandom) return;
+
+  const faltan = CANTIDAD - discos.querySelectorAll('.slot').length;
+  if (faltan > 0 && rondas > 0) {
+    try {
+      const yaEstan = new Set([...discos.querySelectorAll('.slot')].map(slot => slot.dataset.id));
+      const nuevos = (await pedirDiscosAlAzar()).docs
+        .filter(doc => !yaEstan.has(doc.identifier))
+        .slice(0, faltan);
+      if (este !== pedidoRandom) return;
+      agregarSlots(nuevos);
+      return revisarSlots(nuevos, este, rondas - 1);
+    } catch (err) {
+      console.error(err); // si falla el reemplazo, nos quedamos con los que hay
+    }
+  }
+  if (este === pedidoRandom && !discos.querySelector('.slot')) {
     discos.textContent = '';
     const vacio = document.createElement('div');
     vacio.className = 'mensaje';
@@ -130,6 +147,10 @@ function mostrarSlots(docs) {
     discos.appendChild(vacio);
     return;
   }
+  agregarSlots(docs);
+}
+
+function agregarSlots(docs) {
   docs.forEach(doc => {
     const slot = document.createElement('button');
     slot.className = 'slot';
@@ -375,10 +396,10 @@ btnCompartir.addEventListener('click', async () => {
   const nombre = tema.title || tema.name.split('/').pop().replace(/\.[^.]+$/, '');
   const datos = { title: nombre, text: `🎧 ${nombre} — ${discoActual.titulo}`, url: linkDelTema() };
   try {
-    if (navigator.share) {
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
       await navigator.share(datos); // celu: menú de compartir
     } else {
-      await navigator.clipboard.writeText(datos.url); // compu: copiamos el link
+      await navigator.clipboard.writeText(datos.url); // compu: copiamos el link directo, sin el menú de Windows
       btnCompartir.textContent = '✅';
       setTimeout(() => { btnCompartir.textContent = '🔗'; }, 1500);
     }

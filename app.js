@@ -53,25 +53,37 @@ async function cargarRandom() {
   cargando.textContent = '⏳ Buscando...';
   discos.appendChild(cargando);
 
-  const params = new URLSearchParams({
-    q: `(${palabra || '*:*'}) AND mediatype:audio AND format:MP3`, // solo discos con algún MP3
-    rows: CANTIDAD,
-    output: 'json'
-  });
-  ['identifier', 'title', 'creator'].forEach(c => params.append('fl[]', c));
-  params.append('sort[]', 'random');
-
   try {
-    const res = await fetch(`${API_BUSQUEDA}?${params}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    // El orden "random" de archive.org es fijo para una misma consulta,
+    // así que en cada toque saltamos a una página al azar de ese orden.
+    let respuesta = await pedirDiscos(1 + Math.floor(Math.random() * 100));
+    if (!respuesta.docs.length && respuesta.numFound > 0) {
+      // la palabra tiene pocos resultados: elegimos entre las páginas que sí existen
+      const paginas = Math.ceil(respuesta.numFound / CANTIDAD);
+      respuesta = await pedirDiscos(1 + Math.floor(Math.random() * paginas));
+    }
     if (este !== pedidoRandom) return;
-    mostrarSlots(data.response.docs);
+    mostrarSlots(respuesta.docs);
   } catch (err) {
     if (este !== pedidoRandom) return;
     cargando.textContent = '❌ No pudimos buscar, probá de nuevo.';
     console.error(err);
   }
+}
+
+async function pedirDiscos(page) {
+  const params = new URLSearchParams({
+    q: `(${palabra || '*:*'}) AND mediatype:audio AND format:MP3`, // solo discos con algún MP3
+    rows: CANTIDAD,
+    page,
+    output: 'json'
+  });
+  ['identifier', 'title', 'creator'].forEach(c => params.append('fl[]', c));
+  params.append('sort[]', 'random');
+
+  const res = await fetch(`${API_BUSQUEDA}?${params}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).response;
 }
 
 function mostrarSlots(docs) {

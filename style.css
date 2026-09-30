@@ -1,127 +1,281 @@
+[hidden] {
+  display: none !important;
+}
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
+  padding: 0 12px;
   font-family: system-ui, sans-serif;
   background: #0f0f0f;
   color: #fff;
+  display: flex;
+  justify-content: center;
+  overflow-x: hidden;
 }
-header {
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- El aparato ---------- */
+#aparato {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  height: min(780px, calc(100vh - 72px));
+  min-height: 560px;
+  margin: 56px 0 16px;
   padding: 16px;
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(160deg, #2c2c33, #1a1a1f);
+  border: 2px solid #3d3d46;
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+#cordon {
+  position: absolute;
+  left: 0;
+  top: -46px;
+  width: 100%;
+  height: 48px;
+  pointer-events: none;
+  overflow: visible;
+}
+#cordon path {
+  fill: none;
+  stroke: #6a6a75;
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+header {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  margin: 0;
+  font-size: 20px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #7c5cff;
+}
+#btn-lupa {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #111;
+  font-size: 16px;
+}
+#btn-lupa:hover {
+  background: #333;
 }
 #buscador {
-  flex: 1;
   padding: 10px 14px;
-  border-radius: 20px;
   border: none;
-  background: #222;
+  border-radius: 20px;
+  background: #111;
   color: #fff;
+}
+
+/* ---------- Pantalla ---------- */
+#pantalla {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0c1512;
+  color: #d7f5e4;
+  border: 2px solid #000;
+  border-radius: 14px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
 }
 #resultados {
-  padding: 16px;
-}
-.grilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-.tarjeta {
-  cursor: pointer;
-  background: #181818;
-  border-radius: 8px;
-  padding: 10px;
-}
-.tarjeta:hover {
-  background: #262626;
-}
-.tarjeta img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 6px;
-  background: #222;
-}
-.tarjeta .titulo {
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.tarjeta .autor {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #aaa;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#btn-random {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 20px;
-  background: #222;
-  color: #fff;
-  cursor: pointer;
-  white-space: nowrap;
-}
-#btn-random:hover {
-  background: #333;
-}
-
-#btn-volver {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 20px;
-  background: #222;
-  color: #fff;
-  cursor: pointer;
-}
-#btn-volver:hover {
-  background: #333;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
 }
 .disco-cabecera {
   display: flex;
-  gap: 20px;
-  align-items: flex-end;
-  margin: 20px 0;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 .disco-cabecera img {
-  width: 200px;
-  max-width: 40vw;
-  aspect-ratio: 1;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   border-radius: 8px;
   background: #222;
 }
 .disco-cabecera h2 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: #fff;
 }
 .disco-cabecera .autor {
-  color: #aaa;
+  font-size: 12px;
+  color: #8fbfa5;
 }
 .tema {
   display: flex;
-  gap: 14px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 8px 8px;
   border-radius: 6px;
+  font-size: 14px;
   cursor: pointer;
 }
 .tema:hover {
-  background: #262626;
+  background: #16261e;
+}
+.tema.sonando {
+  background: #1f4a35;
+  color: #fff;
 }
 .tema .num {
-  width: 24px;
-  color: #aaa;
+  width: 22px;
   text-align: right;
+  color: #8fbfa5;
 }
 .tema .nombre {
   flex: 1;
+  min-width: 0;
 }
 .tema .duracion {
+  color: #8fbfa5;
+}
+
+/* ---------- Reproductor ---------- */
+#player {
+  padding: 10px 12px;
+  border-top: 1px solid #23322b;
+  background: #0a110e;
+}
+#progreso {
+  width: 100%;
+  margin: 0;
+  accent-color: #7c5cff;
+}
+.tiempos {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #8fbfa5;
+}
+.controles {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 6px;
+}
+.controles button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: #1c1c22;
+  color: #fff;
+  font-size: 18px;
+}
+.controles button:hover {
+  background: #33333d;
+}
+#btn-play {
+  background: #7c5cff;
+}
+#btn-play:hover {
+  background: #957bff;
+}
+
+/* ---------- Los 4 botones de abajo ---------- */
+#etiqueta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  font-size: 12px;
   color: #aaa;
+}
+#btn-borrar {
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: #333;
+  color: #fff;
+  font-size: 10px;
+}
+#botones {
+  display: flex;
+  gap: 8px;
+}
+#discos {
+  flex: 3;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.slot {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+  border: 2px solid #3d3d46;
+  border-radius: 8px;
+  text-align: left;
+}
+.slot:hover {
+  border-color: #7c5cff;
+}
+.slot img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #222;
+}
+.slot span {
+  padding: 4px 5px;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.mensaje {
+  grid-column: 1 / -1;
+  align-self: center;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+}
+#btn-random {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px solid #3d3d46;
+  border-radius: 8px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+}
+#btn-random .dado {
+  font-size: 26px;
+}
+#btn-random:hover {
+  border-color: #7c5cff;
 }

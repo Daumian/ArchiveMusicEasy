@@ -7,16 +7,42 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>🎵 ArchiveMusicEasy</h1>
-    <input id="buscador" type="search" placeholder="Buscar música...">
-    <button id="btn-random" title="5 discos al azar">🎲 Random</button>
-  </header>
+  <div id="aparato">
+    <svg id="cordon" viewBox="0 0 380 48" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M 40 46 C 40 0, 250 0, 330 22 S 372 40, 366 48"></path>
+    </svg>
 
-  <main id="resultados"></main>
+    <header>
+      <h1>Archive Music</h1>
+      <button id="btn-lupa" title="Buscar">🔍</button>
+    </header>
 
-  <footer id="player"></footer>
+    <input id="buscador" type="search" placeholder="Buscar música..." hidden>
+
+    <div id="pantalla">
+      <main id="resultados"></main>
+
+      <footer id="player">
+        <input id="progreso" type="range" min="0" max="100" value="0" step="0.1" aria-label="Progreso">
+        <div class="tiempos"><span id="t-actual">0:00</span><span id="t-total">0:00</span></div>
+        <div class="controles">
+          <button id="btn-anterior" title="Anterior">⏮</button>
+          <button id="btn-play" title="Play / pausa">▶</button>
+          <button id="btn-siguiente" title="Siguiente">⏭</button>
+        </div>
+      </footer>
+    </div>
+
+    <div id="etiqueta"></div>
+
+    <nav id="botones">
+      <div id="discos"></div>
+      <button id="btn-random" title="Otros 3 al azar"><span class="dado">🎲</span><span>Otros 3</span></button>
+    </nav>
+  </div>
+
+  <audio id="audio"></audio>
 
   <script src="app.js"></script>
 </body>
-</html>
+</html>

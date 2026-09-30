@@ -59,3 +59,18 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+#btn-random-fecha,
+#btn-random-sort {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 20px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#btn-random-fecha:hover,
+#btn-random-sort:hover {
+  background: #333;
+}

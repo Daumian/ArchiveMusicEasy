@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f0f0f;
+  color: #fff;
+}
+header {
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+#buscador {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: none;
+  background: #222;
+  color: #fff;
+}

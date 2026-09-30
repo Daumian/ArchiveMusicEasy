@@ -281,27 +281,44 @@ h1 {
 }
 
 /* ---------- Volumen ---------- */
-.volumen {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+.controles {
+  position: relative;
 }
-#btn-mute {
-  width: 32px;
-  height: 32px;
-  padding: 0;
+#control-volumen {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+#btn-volumen {
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
   background: #1c1c22;
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
 }
-#btn-mute:hover {
+#btn-volumen:hover {
   background: #33333d;
 }
+#panel-volumen {
+  position: absolute;
+  right: 0;
+  bottom: 52px;
+  width: 44px;
+  padding: 12px 0;
+  display: flex;
+  justify-content: center;
+  background: #1c1c22;
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+}
 #volumen {
-  flex: 1;
   margin: 0;
+  width: 20px;
+  height: 110px;
+  writing-mode: vertical-lr; /* barra vertical: arriba = más volumen */
+  direction: rtl;
   accent-color: #7c5cff;
 }

@@ -253,7 +253,8 @@ progreso.addEventListener('input', () => { audio.currentTime = progreso.value; }
 // ---------- Volumen ----------
 
 const volumen = document.getElementById('volumen');
-const btnMute = document.getElementById('btn-mute');
+const btnVolumen = document.getElementById('btn-volumen');
+const panelVolumen = document.getElementById('panel-volumen');
 
 function iconoVolumen() {
   if (audio.muted || audio.volume === 0) return '🔇';
@@ -261,7 +262,7 @@ function iconoVolumen() {
 }
 
 audio.addEventListener('volumechange', () => {
-  btnMute.textContent = iconoVolumen();
+  btnVolumen.textContent = iconoVolumen();
   volumen.value = audio.muted ? 0 : audio.volume;
   try { localStorage.setItem('volumen', audio.volume); } catch (e) { /* sin storage, no pasa nada */ }
 });
@@ -269,7 +270,11 @@ volumen.addEventListener('input', () => {
   audio.muted = false;
   audio.volume = Number(volumen.value);
 });
-btnMute.addEventListener('click', () => { audio.muted = !audio.muted; });
+// El ícono abre y cierra la barra; tocar en cualquier otro lado la cierra
+btnVolumen.addEventListener('click', () => { panelVolumen.hidden = !panelVolumen.hidden; });
+document.addEventListener('click', e => {
+  if (!e.target.closest('#control-volumen')) panelVolumen.hidden = true;
+});
 
 // Arrancamos con el último volumen usado (o 70%, para que no sorprenda)
 let volumenInicial = 0.7;

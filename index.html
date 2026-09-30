@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ArchiveMusicEasy 🎵</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <div id="aparato">
@@ -29,10 +29,12 @@
           <button id="btn-anterior" title="Anterior">⏮</button>
           <button id="btn-play" title="Play / pausa">▶</button>
           <button id="btn-siguiente" title="Siguiente">⏭</button>
-        </div>
-        <div class="volumen">
-          <button id="btn-mute" title="Silenciar">🔊</button>
-          <input id="volumen" type="range" min="0" max="1" step="0.01" value="0.7" aria-label="Volumen">
+          <div id="control-volumen">
+            <div id="panel-volumen" hidden>
+              <input id="volumen" type="range" min="0" max="1" step="0.01" value="0.7" aria-label="Volumen">
+            </div>
+            <button id="btn-volumen" title="Volumen">🔊</button>
+          </div>
         </div>
       </footer>
     </div>
@@ -47,6 +49,6 @@
 
   <audio id="audio"></audio>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

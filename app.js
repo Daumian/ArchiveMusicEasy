@@ -50,7 +50,10 @@ function portada(id) {
 
 // ---------- Los 3 discos al azar ----------
 
-async function cargarRandom() {
+let reintentos = 0; // veces que pedimos otros 3 solos porque ninguno servía
+
+async function cargarRandom(reintento = false) {
+  if (!reintento) reintentos = 0;
   const este = ++pedidoRandom;
   actualizarEtiqueta();
   discos.textContent = '';
@@ -70,11 +73,37 @@ async function cargarRandom() {
     }
     if (este !== pedidoRandom) return;
     mostrarSlots(respuesta.docs);
+    revisarSlots(respuesta.docs, este);
   } catch (err) {
     if (este !== pedidoRandom) return;
     cargando.textContent = '❌ No pudimos buscar, probá de nuevo.';
     console.error(err);
   }
+}
+
+// Por atrás, sin apurar: los discos sin ningún tema válido (solo radio, sin MP3) desaparecen
+async function revisarSlots(docs, este) {
+  if (!docs.length) return; // "no encontramos nada" ya se mostró; no reintentamos
+  await Promise.allSettled(docs.map(doc => cargarDisco(doc.identifier).then(info => {
+    if (este === pedidoRandom && !info.temas.length) quitarSlot(doc.identifier);
+  })));
+  if (este !== pedidoRandom || discos.querySelector('.slot')) return;
+  if (reintentos < 3) {
+    reintentos++;
+    cargarRandom(true); // ninguno servía: pedimos otros 3
+  } else {
+    discos.textContent = '';
+    const vacio = document.createElement('div');
+    vacio.className = 'mensaje';
+    vacio.textContent = '😅 Estos no tenían música. Tocá 🎲 Otros 3.';
+    discos.appendChild(vacio);
+  }
+}
+
+function quitarSlot(id) {
+  discos.querySelectorAll('.slot').forEach(slot => {
+    if (slot.dataset.id === id) slot.remove();
+  });
 }
 
 async function pedirDiscos(page) {
@@ -155,25 +184,47 @@ function filtrarTemas(files, limite = LIMITE_TEMA) {
   });
 }
 
+// Metadata de cada disco, guardada como promesa: la revisión de fondo y el toque comparten el pedido
+const cacheDiscos = new Map();
+
+function cargarDisco(id) {
+  if (!cacheDiscos.has(id)) {
+    const promesa = fetch(`${API_METADATA}/${encodeURIComponent(id)}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        const archivos = data.files || [];
+        const meta = data.metadata || {};
+        return {
+          titulo: aTexto(meta.title, id),
+          autor: aTexto(meta.creator, 'Desconocido'),
+          temas: filtrarTemas(archivos),
+          hayLargos: filtrarTemas(archivos, Infinity).length > 0
+        };
+      });
+    promesa.catch(() => cacheDiscos.delete(id)); // si falló, que se pueda reintentar
+    cacheDiscos.set(id, promesa);
+  }
+  return cacheDiscos.get(id);
+}
+
 async function abrirDisco(id, { tema = null, auto = true } = {}) {
   const este = ++pedidoDisco;
   resultados.textContent = '⏳ Abriendo disco...';
   try {
-    const res = await fetch(`${API_METADATA}/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const info = await cargarDisco(id);
     if (este !== pedidoDisco) return;
-    const temas = filtrarTemas(data.files || []);
-    if (!temas.length) {
-      const hayLargos = filtrarTemas(data.files || [], Infinity).length > 0;
-      resultados.textContent = hayLargos
-        ? `📻 Ese disco solo tiene programas largos (más de ${LIMITE_TEMA / 60} min). Probá con otro.`
-        : '🤷 Ese disco no tiene temas MP3. Probá con otro.';
+    if (!info.temas.length) {
+      resultados.textContent = info.hayLargos
+        ? `📻 Ese disco solo tiene programas largos (más de ${LIMITE_TEMA / 60} min).`
+        : '🤷 Ese disco no tiene temas MP3.';
+      quitarSlot(id);
       return;
     }
-    const meta = data.metadata || {};
-    discoActual = { id, titulo: aTexto(meta.title, id), autor: aTexto(meta.creator, 'Desconocido') };
-    cola = temas;
+    discoActual = { id, titulo: info.titulo, autor: info.autor };
+    cola = info.temas;
     mostrarDisco();
     const inicial = Math.max(0, cola.findIndex(f => f.name === tema)); // si no está, el primero
     reproducir(inicial, auto);

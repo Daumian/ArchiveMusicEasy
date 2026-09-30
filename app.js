@@ -67,3 +67,6 @@ function mostrarResultados(docs) {
 buscador.addEventListener('keydown', e => {
   if (e.key === 'Enter' && buscador.value.trim()) buscar(buscador.value.trim());
 });
+
+// Pantalla de inicio: colecciones populares, así no arranca vacío
+buscar('collection:(78rpm OR oldtimeradio OR etree)');

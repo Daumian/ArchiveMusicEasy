@@ -9,22 +9,12 @@ function aTexto(valor, porDefecto) {
   return valor || porDefecto;
 }
 
-// Fisher-Yates: mezcla una copia del array
-function mezclar(lista) {
-  const a = [...lista];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 const CANTIDAD = 12; // pocos resultados = pocos datos y un solo pedido por acción
 
-async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads desc', sortear = 0 } = {}) {
+async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads desc' } = {}) {
   resultados.textContent = '⏳ Buscando...';
   const params = new URLSearchParams({
-    q: `(${texto}) AND mediatype:audio`,
+    q: `(${texto}) AND mediatype:audio AND format:MP3`, // solo discos con algún MP3
     rows,
     page,
     output: 'json'
@@ -36,16 +26,17 @@ async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads des
     const res = await fetch(`${API_BUSQUEDA}?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    let docs = data.response.docs;
-    if (sortear) docs = mezclar(docs).slice(0, sortear);
-    mostrarResultados(docs);
+    mostrarResultados(data.response.docs);
   } catch (err) {
     resultados.textContent = '❌ No pudimos buscar, probá de nuevo.';
     console.error(err);
   }
 }
 
+let ultimosDocs = []; // para poder volver desde la vista de un disco
+
 function mostrarResultados(docs) {
+  ultimosDocs = docs;
   resultados.textContent = '';
   if (!docs.length) {
     resultados.textContent = '🤷 No encontramos nada.';
@@ -79,21 +70,113 @@ function mostrarResultados(docs) {
   resultados.appendChild(grilla);
 }
 
+// ---------- Vista de un disco ----------
+
+const API_METADATA = 'https://archive.org/metadata';
+
+// "213.45" o "3:33" -> "3:33"
+function formatearDuracion(length) {
+  if (!length) return '';
+  let seg = String(length).includes(':')
+    ? String(length).split(':').reduce((t, n) => t * 60 + Number(n), 0)
+    : Math.round(Number(length));
+  if (!Number.isFinite(seg)) return '';
+  return `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+}
+
+// Un mismo tema puede estar en varios MP3: nos quedamos con uno, preferimos VBR MP3
+function filtrarTemas(files) {
+  const porTema = new Map();
+  files.filter(f => (f.format || '').includes('MP3')).forEach(f => {
+    const clave = (f.original || f.name).replace(/\.[^.]+$/, '');
+    const actual = porTema.get(clave);
+    if (!actual || (f.format === 'VBR MP3' && actual.format !== 'VBR MP3')) porTema.set(clave, f);
+  });
+  return [...porTema.values()].sort((a, b) => {
+    const ta = parseInt(a.track, 10), tb = parseInt(b.track, 10);
+    if (!isNaN(ta) && !isNaN(tb) && ta !== tb) return ta - tb;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+async function abrirDisco(id) {
+  resultados.textContent = '⏳ Abriendo disco...';
+  try {
+    const res = await fetch(`${API_METADATA}/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    mostrarDisco(id, data.metadata || {}, filtrarTemas(data.files || []));
+  } catch (err) {
+    resultados.textContent = '❌ No pudimos abrir el disco, probá de nuevo.';
+    console.error(err);
+  }
+}
+
+function mostrarDisco(id, meta, temas) {
+  resultados.textContent = '';
+
+  const volver = document.createElement('button');
+  volver.id = 'btn-volver';
+  volver.textContent = '← Volver';
+  volver.addEventListener('click', () => mostrarResultados(ultimosDocs));
+
+  const cabecera = document.createElement('div');
+  cabecera.className = 'disco-cabecera';
+
+  const img = document.createElement('img');
+  img.src = `https://archive.org/services/img/${encodeURIComponent(id)}`;
+  img.alt = '';
+
+  const info = document.createElement('div');
+  const titulo = document.createElement('h2');
+  titulo.textContent = aTexto(meta.title, id);
+  const autor = document.createElement('div');
+  autor.className = 'autor';
+  autor.textContent = aTexto(meta.creator, 'Desconocido');
+  info.append(titulo, autor);
+  cabecera.append(img, info);
+
+  const lista = document.createElement('div');
+  lista.className = 'temas';
+  if (!temas.length) {
+    lista.textContent = '🤷 Este disco no tiene temas MP3.';
+  }
+  temas.forEach((f, i) => {
+    const fila = document.createElement('div');
+    fila.className = 'tema';
+    fila.dataset.archivo = f.name;
+
+    const num = document.createElement('span');
+    num.className = 'num';
+    num.textContent = i + 1;
+
+    const nombre = document.createElement('span');
+    nombre.className = 'nombre';
+    nombre.textContent = f.title || f.name.split('/').pop().replace(/\.[^.]+$/, '');
+
+    const dur = document.createElement('span');
+    dur.className = 'duracion';
+    dur.textContent = formatearDuracion(f.length);
+
+    fila.append(num, nombre, dur);
+    lista.appendChild(fila);
+  });
+
+  resultados.append(volver, cabecera, lista);
+}
+
+// Tocar una tarjeta abre el disco
+resultados.addEventListener('click', e => {
+  const tarjeta = e.target.closest('.tarjeta');
+  if (tarjeta) abrirDisco(tarjeta.dataset.id);
+});
+
 buscador.addEventListener('keydown', e => {
   if (e.key === 'Enter' && buscador.value.trim()) buscar(buscador.value.trim());
 });
 
-// PRUEBA A: un día al azar; pedimos 40 subidos ese día (sin ranking por fama) y sorteamos 5
-document.getElementById('btn-random-fecha').addEventListener('click', () => {
-  const anio = 2006 + Math.floor(Math.random() * 20); // 2006-2025
-  const mes = 1 + Math.floor(Math.random() * 12);
-  const dia = 1 + Math.floor(Math.random() * new Date(anio, mes, 0).getDate());
-  const f = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-  buscar(`addeddate:[${f} TO ${f}T23:59:59Z]`, { rows: 40, orden: 'addeddate asc', sortear: 5 });
-});
-
-// PRUEBA B: 5 discos con orden aleatorio de la API (si archive.org lo soporta)
-document.getElementById('btn-random-sort').addEventListener('click', () => {
+// Random: 5 discos al azar de todo el catálogo (sort=random de la API, sin filtros)
+document.getElementById('btn-random').addEventListener('click', () => {
   buscar('*:*', { rows: 5, orden: 'random' });
 });
 

@@ -9,9 +9,19 @@ function aTexto(valor, porDefecto) {
   return valor || porDefecto;
 }
 
+// Fisher-Yates: mezcla una copia del array
+function mezclar(lista) {
+  const a = [...lista];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 const CANTIDAD = 12; // pocos resultados = pocos datos y un solo pedido por acción
 
-async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads desc' } = {}) {
+async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads desc', sortear = 0 } = {}) {
   resultados.textContent = '⏳ Buscando...';
   const params = new URLSearchParams({
     q: `(${texto}) AND mediatype:audio`,
@@ -26,7 +36,9 @@ async function buscar(texto, { rows = CANTIDAD, page = 1, orden = 'downloads des
     const res = await fetch(`${API_BUSQUEDA}?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    mostrarResultados(data.response.docs);
+    let docs = data.response.docs;
+    if (sortear) docs = mezclar(docs).slice(0, sortear);
+    mostrarResultados(docs);
   } catch (err) {
     resultados.textContent = '❌ No pudimos buscar, probá de nuevo.';
     console.error(err);
@@ -71,13 +83,13 @@ buscador.addEventListener('keydown', e => {
   if (e.key === 'Enter' && buscador.value.trim()) buscar(buscador.value.trim());
 });
 
-// PRUEBA A: 5 discos populares de un mes al azar (siempre página 1, sin paginación profunda)
+// PRUEBA A: un día al azar; pedimos 40 subidos ese día (sin ranking por fama) y sorteamos 5
 document.getElementById('btn-random-fecha').addEventListener('click', () => {
   const anio = 2006 + Math.floor(Math.random() * 20); // 2006-2025
   const mes = 1 + Math.floor(Math.random() * 12);
-  const ultimo = new Date(anio, mes, 0).getDate();
-  const mm = String(mes).padStart(2, '0');
-  buscar(`addeddate:[${anio}-${mm}-01 TO ${anio}-${mm}-${ultimo}]`, { rows: 5 });
+  const dia = 1 + Math.floor(Math.random() * new Date(anio, mes, 0).getDate());
+  const f = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  buscar(`addeddate:[${f} TO ${f}T23:59:59Z]`, { rows: 40, orden: 'addeddate asc', sortear: 5 });
 });
 
 // PRUEBA B: 5 discos con orden aleatorio de la API (si archive.org lo soporta)
